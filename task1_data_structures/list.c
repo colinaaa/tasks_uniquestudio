@@ -116,7 +116,9 @@ int main(void)
 		printf("now delete 6\n");
 		delete_element(6,L);
 		printf("now print all the elements:\n");
+		print_the_list(L);
 		printf("now delete all the elements!\n");
+		delete_list(L);
 		printf("now all the nodes have been deleted!\n");
 		print_the_list(L);
 }
