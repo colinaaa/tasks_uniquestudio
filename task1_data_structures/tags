@@ -8,7 +8,7 @@ List_Header	list.c	/^typedef Pointer2Node List_Header;$/;"	t	file:
 List_Header	list.h	/^typedef Pointer2Node List_Header;$/;"	t
 Next	list.c	/^		Position Next;$/;"	m	struct:Node	file:
 Node	list.c	/^struct Node$/;"	s	file:
-Pointer2Node	list.c	/^typedef Node *Pointer2Node;$/;"	t	file:
+Pointer2Node	list.c	/^typedef struct Node *Pointer2Node;$/;"	t	typeref:struct:Node	file:
 Pointer2Node	list.h	/^typedef Node *Pointer2Node;$/;"	t
 Position	list.c	/^typedef Pointer2Node Position;$/;"	t	file:
 Position	list.h	/^typedef Pointer2Node Position;$/;"	t
@@ -16,9 +16,12 @@ delete_element	list.c	/^void delete_element(int x,List_Header L)$/;"	f
 delete_list	list.c	/^void delete_list(List_Header L)$/;"	f
 element	list.c	/^		int element;$/;"	m	struct:Node	file:
 find	list.c	/^Position find(int x, List_Header L)$/;"	f
+find_place	insertsort.c	/^int find_place(int index, int a[])$/;"	f
 find_previous	list.c	/^Position find_previous(int x, List_Header L)$/;"	f
 initialize_a_list	list.c	/^List_Header initialize_a_list(int n)$/;"	f
 insert	list.c	/^void insert (Position P, List_Header L, int x)\/\/insert x *behind* Position P$/;"	f
+insertsort	insertsort.c	/^void insertsort(int a[], int n)$/;"	f
 isEmpty	list.c	/^int isEmpty(List_Header L)$/;"	f
 main	list.c	/^int main(void)$/;"	f
+move_backword	insertsort.c	/^void move_backword(int search_index,int index, int a[])$/;"	f
 print_the_list	list.c	/^void print_the_list(List_Header L)$/;"	f
