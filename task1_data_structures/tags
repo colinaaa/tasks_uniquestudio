@@ -11,6 +11,7 @@ Pointer2Node	list.c	/^typedef struct Node *Pointer2Node;$/;"	t	typeref:struct:No
 Position	list.c	/^typedef Pointer2Node Position;$/;"	t	file:
 delete_element	list.c	/^void delete_element(int x,List_Header L)$/;"	f
 delete_list	list.c	/^void delete_list(List_Header L)$/;"	f
+divide_array	quicksort.c	/^int divide_array(int a[], int first_index, int last_index)$/;"	f
 element	list.c	/^		int element;$/;"	m	struct:Node	file:
 find	list.c	/^Position find(int x, List_Header L)$/;"	f
 find_previous	list.c	/^Position find_previous(int x, List_Header L)$/;"	f
@@ -20,4 +21,7 @@ insertsort	insertsort.c	/^void insertsort(int a[], int n)$/;"	f
 isEmpty	list.c	/^int isEmpty(List_Header L)$/;"	f
 main	insertsort.c	/^int main(void)$/;"	f
 main	list.c	/^int main(void)$/;"	f
+main	mergesort.c	/^int main(void)$/;"	f
+main	quicksort.c	/^int main(void)$/;"	f
 print_the_list	list.c	/^void print_the_list(List_Header L)$/;"	f
+quicksort	quicksort.c	/^void quicksort(int a[], int first_index, int last_index)$/;"	f
