@@ -24,8 +24,8 @@ Stack build_stack(void)
 {
 		Stack S;
 		S=malloc(sizeof(struct Stack_info));
-		S->top_index=EMPTY;
-		S->Array=sizeof(int);
+		S->top_index=-1;
+		S->Array=malloc(sizeof(int)*10);
 		return S;
 }
 
@@ -37,19 +37,14 @@ void push(Stack S,int x)
 
 int pop(Stack S)
 {
-		if (!isEmpty(S))
-		{
-				int tem=S->Array[S->top_index];
-				S->top_index--;
-				return tem;
-		}
-		else
-				return -1;
+		int tem=S->Array[S->top_index];
+		S->top_index--;
+		return tem;
 }
 
 int isEmpty(Stack S)
 {
-		return S->top_index==EMPTY;
+		return S->top_index==-1;
 }
 
 void swap(void)
@@ -69,7 +64,7 @@ void swap(void)
 						char c=getchar();
 						switch(c)
 						{
-								case '+':
+								case '?':
 										deal_plus(S);
 										break;
 								case '-':
@@ -81,12 +76,14 @@ void swap(void)
 								case '/':
 										deal_div(S);
 										break;
-								default:
+								case '\n':
 										flag=0;
 
 						}
 				}
 		}
+		free(S->Array);
+		free(S);
 }
 
 void deal_plus(Stack S)
@@ -97,12 +94,12 @@ void deal_plus(Stack S)
 		}
 		else if (S->Array[S->top_index]=='+'||S->Array[S->top_index]=='-')
 		{
-				printf("%c ",pop(S));
+				printf("+ ");
 				push(S,'+');
 		}
 		else
 		{
-				printf("%c +",pop(S));
+				printf("%c + ",pop(S));
 		}
 }
 
