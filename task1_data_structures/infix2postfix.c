@@ -1,5 +1,7 @@
 #include<stdio.h>
 #include<stdlib.h>
+#include<string.h>
+
 #define EMPTY -1
 
 struct Stack_info
@@ -14,11 +16,7 @@ Stack build_stack(void);
 void push(Stack S, int x);
 int pop(Stack S);
 int isEmpty(Stack S);
-void swap(void);
-void deal_plus(Stack S);
-void deal_sub(Stack S);
-void deal_muti(Stack S);
-void deal_div(Stack S);
+void swap(char * input);
 
 Stack build_stack(void)
 {
@@ -47,43 +45,65 @@ int isEmpty(Stack S)
 		return S->top_index==-1;
 }
 
-void swap(void)
+void swap(char*input)
 {
 		Stack S;
 		S=build_stack();
-		int x;
-		int flag=1;
-		while (flag)
+		int i=0;
+		while (i<=strlen(input)&&input[i]!='\0')
 		{
-				if (scanf("%d",&x)==1)
+				if (input[i]=='+'||input[i]=='-')
 				{
-						printf("%d ",x);
-				}
-				else
-				{
-						char c=getchar();
-						switch(c)
+						if (isEmpty(S))
 						{
-								case '?':
-										deal_plus(S);
-										break;
-								case '-':
-										deal_sub(S);
-										break;
-								case '*':
-										deal_muti(S);
-										break;
-								case '/':
-										deal_div(S);
-										break;
-								case '\n':
-										flag=0;
-
+								push(S,input[i]);
+						}
+						else if (S->Array[S->top_index]=='*'||S->Array[S->top_index]=='/')
+						{
+								while(!isEmpty(S))
+								{
+										printf("%c",pop(S));
+								}
+								push(S,input[i]);
+						}
+						else//栈顶为加或减
+						{
+								printf("%c",pop(S));
+								push(S,input[i]);
 						}
 				}
+				else if (input[i]=='*'||input[i]=='/')
+				{
+						if (isEmpty(S))
+						{
+								push(S,input[i]);
+						}
+						else if (S->Array[S->top_index]=='*'||S->Array[S->top_index]=='/')
+						{
+								//此时栈内有+(-)*(/)或只有*(/)
+								//只需将*(/)弹出并压入新元素
+								printf("%c",pop(S));
+								push(S,input[i]);
+						}
+						else
+						{
+								push(S,input[i]);
+						}
+				}
+				else //为数字
+				{
+						printf("%c ",input[i]);
+				}
+				i++;
+				putchar(' ');
+		}
+		while(!isEmpty(S))//将栈内所有符号全部推出
+		{
+				printf("%c",pop(S));
 		}
 		free(S->Array);
 		free(S);
+		putchar('\n');
 }
 
 void deal_plus(Stack S)
@@ -158,6 +178,11 @@ int main(void)
 {
 		printf("we have an infix:\n3+4*5-6+7-8/9");
 		printf("now I change it to postfix\n");
-		swap();
+		char infix1[]="3+4*5-6+7-8/9";
+		swap(infix1);
+		printf("now we have another infix:\n13*15*14+1-5+3/6");
+		printf("now I change it to postfix\n");
+		char infix2[]=("13*15+14/1-5+3/6");
+		swap(infix2);
 		return 0;
 }
