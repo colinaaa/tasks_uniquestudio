@@ -7,7 +7,7 @@ typedef struct str_hashtable * Hashtable;
 typedef unsigned int Index;
 
 //每个块的状态
-enum Status {EMPTY, DELETED, OCCUPIED};
+enum Status {EMPTY, DELETED=999, OCCUPIED};
 
 //每个入口
 struct hash_entry//block
@@ -106,6 +106,7 @@ void insert(Hashtable H, const char * key,int value)
 						original_index-=H->table_size;
 				}
 		}
+		printf("%d\n",original_index);
 		H->block_array[original_index].status=OCCUPIED;
 		H->block_array[original_index].value=value;
 		unsigned int key_sum;
@@ -118,7 +119,7 @@ void delete(Hashtable H, const char * key)
 		Index index;
 		index=find(H,key);
 		H->block_array[index].status=DELETED;
-
+		H->block_array[index].value=0;
 }
 
 int main(void)
@@ -128,13 +129,13 @@ int main(void)
 		H=initialize_table(2017);
 
 		printf("now we have k1:Andy,  v1:1\n");
-		char key1[]="Andy";
+		const char key1[]="Andy";
 		int value1=1;
 		printf("            k2:Bob,   v2:2\n");
-		char key2[]="Bob";
+		const char key2[]="Bob";
 		int value2=2;
 		printf("            k3:Colin, v3:3\n");
-		char key3[]="Colin";
+		const char key3[]="Colin";
 		int value3=3;
 
 		//实现插入哈希表
@@ -144,18 +145,29 @@ int main(void)
 		insert(H,key3,value3);
 
 		//实现查找
-		printf("let's find them");
-		printf("the value for Andy is: %d\n",H->block_array[find(H,key1)]);
-		printf("the value for Bob is: %d\n",H->block_array[find(H,key2)]);
-		printf("the value for Colin is: %d\n",H->block_array[find(H,key3)]);
-		printf("now delete Colin\n");
+		printf("let's find them\nhere are their indexs:\n");
+
+		//查看散列地址
+		int i1,i2,i3;
+		i1=find(H,key1);
+		i2=find(H,key2);
+		i3=find(H,key3);
+		printf("%d\n%d\n%d\n",i1,i2,i3);
+
+		//根据地址查找
+		printf("the value for Andy is: %d\n",H->block_array[i1].value);
+		printf("the value for Bob is: %d\n",H->block_array[i2].value);
+		printf("the value for Colin is: %d\n",H->block_array[i3].value);
+		printf("now delete Colin:change value to 0,change stauts to 999\n");
 
 		//实现删除
 		delete(H,key3);
 		printf("now try to find Colin\n");
 		Index index3;
 		index3=find(H,key3);
-
+		printf("the index of Colin:%d\n",index3);
+		printf("the status of Colin:%d\n",H->block_array[index3].status);
+		printf("the value of Colin is:%d\n",H->block_array[index3].value);
 		printf("deleting hash table...\n");
 		//释放动态生成的内存
 		free(H->block_array);
