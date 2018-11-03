@@ -1,26 +1,28 @@
 #include<stdio.h>
+#include<stdlib.h>
 
 struct avltree_node;
 
-typedef avltree_node * AvlTree;
+typedef struct avltree_node * AvlTree;
 
 struct avltree_node
 {
 		int key;
 		int height;
 		AvlTree left;
-		AvlTree ight;
-}
+		AvlTree right;
+};
 
 int Max(int a, int b);
-AvlTree reate_node(int key, AvlTree left, AvlTree right);
+AvlTree create_node(int key, AvlTree left, AvlTree right);
 AvlTree insert (AvlTree tree, int key);
 int height(AvlTree tree);
-int change_height(AvlTree tree);
+void change_height(AvlTree tree);
 AvlTree ll_rotation(AvlTree tree);
 AvlTree lr_rotation(AvlTree tree);
 AvlTree rr_rotation(AvlTree tree);
 AvlTree rl_rotation(AvlTree tree);
+void delete_tree(AvlTree tree);
 
 int Max(int a, int b)
 {
@@ -41,7 +43,7 @@ int height(AvlTree tree)
 
 void change_height(AvlTree tree)
 {
-		tree->height=max(height(tree->left),height(tree->right))+1;
+		tree->height=Max(height(tree->left),height(tree->right))+1;
 }
 
 AvlTree create_node(int key, AvlTree left, AvlTree right)
@@ -104,7 +106,7 @@ AvlTree ll_rotation(AvlTree tree)//tree是root指针
 
 		//改变高度
 		change_height(tree);//先改变子树高度
-		change_height(tem_tree);
+		tem_tree->height=Max(height(tree),height(tem_tree->left))+1;
 
 		return tem_tree;//返回root指针
 }
@@ -118,7 +120,7 @@ AvlTree rr_rotation(AvlTree tree)
 		tem_tree->left=tree;
 
 		change_height(tree);
-		change_height(tem_tree);
+		tem_tree->height=Max(height(tree),height(tem_tree->right))+1;
 		
 		return tem_tree;
 }
@@ -136,4 +138,33 @@ AvlTree rl_rotation(AvlTree tree)
 		tree->right=ll_rotation(tree->right);
 
 		return rr_rotation(tree);
+}
+
+void delete_tree(AvlTree tree)
+{
+		if(tree==NULL)
+				return;
+		if (tree->left!=NULL)
+				delete_tree(tree->left);
+		if (tree->right!=NULL)
+				delete_tree(tree->right);
+
+		free(tree);
+}
+
+int main(void )
+{
+		printf("initializing an avltree...\n");
+		AvlTree T=NULL;
+		printf("insert items into it\n");
+		T=insert(T,19);
+		T=insert(T,28);
+		T=insert(T,5);
+		T=insert(T,9);
+		T=insert(T,22);
+		T=insert(T,15);
+		//遍历树
+
+		printf("delete the tree");
+		delete_tree(T);
 }
