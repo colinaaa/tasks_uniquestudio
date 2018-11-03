@@ -16,18 +16,12 @@ struct avltree_node
 int Max(int a, int b);
 AvlTree create_node(int key, AvlTree left, AvlTree right);
 AvlTree insert (AvlTree tree, int key);
-int height(AvlTree tree);
-void change_height(AvlTree tree);
 AvlTree ll_rotation(AvlTree tree);
 AvlTree lr_rotation(AvlTree tree);
 AvlTree rr_rotation(AvlTree tree);
 AvlTree rl_rotation(AvlTree tree);
 void delete_tree(AvlTree tree);
-
-int Max(int a, int b)
-{
-		return a>b?a:b;
-}
+int height(AvlTree tree);
 
 int height(AvlTree tree)
 {
@@ -40,10 +34,9 @@ int height(AvlTree tree)
 				return tree->height;
 		}
 }
-
-void change_height(AvlTree tree)
+int Max(int a, int b)
 {
-		tree->height=Max(height(tree->left),height(tree->right))+1;
+		return a>b?a:b;
 }
 
 AvlTree create_node(int key, AvlTree left, AvlTree right)
@@ -60,14 +53,14 @@ AvlTree insert(AvlTree tree, int key)
 {
 		if (tree==NULL)//空树或递归至叶子
 		{
-				AvlTree T;
-				T=create_node(key,NULL,NULL);
+				tree=create_node(key,NULL,NULL);
 		}
 		else if(key<tree->key)//插入左子树
 		{
 				tree->left=insert(tree->left,key);
-				if (height(tree->left)-height(tree->right)>=2)
-						//当tree指向root时，才有可能出现不平衡，如果失去平衡
+				if (height(tree->left)-height(tree->right)==2)
+		
+			//当tree指向root时，才有可能出现不平衡，如果失去平衡
 						//此时传入旋转函数的tree是树的root指针
 				{
 						if (key>tree->left->key)
@@ -79,7 +72,7 @@ AvlTree insert(AvlTree tree, int key)
 		else if (key>tree->key)//插入右子树
 		{
 				tree->right=insert(tree->right,key);
-				if (height(tree->right)-height(tree->left)>=2)
+				if (height(tree->right)-height(tree->left)==2)
 				{
 						if (key>tree->right->key)
 						{
@@ -90,7 +83,7 @@ AvlTree insert(AvlTree tree, int key)
 				}
 		}
 		//树的高度等于左或右子树高度加一（高度也递归上升）
-		change_height(tree);
+		tree->height=Max(height(tree->left),height(tree->right))+1;
 		//返回根节点
 		return tree;
 }
@@ -105,7 +98,8 @@ AvlTree ll_rotation(AvlTree tree)//tree是root指针
 		tem_tree->right=tree;
 
 		//改变高度
-		change_height(tree);//先改变子树高度
+		//先改变子树高度
+		tree->height=Max(height(tree->left),height(tree->right))+1;
 		tem_tree->height=Max(height(tree),height(tem_tree->left))+1;
 
 		return tem_tree;//返回root指针
@@ -119,7 +113,7 @@ AvlTree rr_rotation(AvlTree tree)
 		tree->right=tem_tree->left;
 		tem_tree->left=tree;
 
-		change_height(tree);
+		tree->height=Max(height(tree->left),height(tree->right))+1;
 		tem_tree->height=Max(height(tree),height(tem_tree->right))+1;
 		
 		return tem_tree;
