@@ -10,5 +10,6 @@ class User(db.Model):
 class Photo(db.Model):
     __tablename__='photo'
     id=db.Column(db.Integer,primary_key=True)
-    data=db.Column(db.Text)
     user_id=db.Column(db.Integer,db.ForeignKey('user.id'))
+    path=db.Column(db.Text)
+    name=db.Column(db.Unicode)

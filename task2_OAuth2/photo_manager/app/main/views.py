@@ -1,4 +1,4 @@
-from flask import render_template, redirect, url_for, request
+from flask import render_template, redirect, url_for, request,make_response
 from . import main
 from .forms import Login,Signup
 from .. import db
@@ -8,6 +8,10 @@ import base64
 #from flask_login import login_required, current_user
 
 basedir=os.path.abspath(os.path.dirname(__file__))
+
+@main.route('/')
+def index():
+    return render_template('index.html')
 
 @main.route('/user/<username>',methods=['GET','POST'])
 def user(username):
@@ -49,16 +53,20 @@ def upload():
 @main.route('/up',methods=['POST'])
 #@login_required
 def up():
-    photo_file=request.files['photo']
-    pic_data=base64.urlsafe_b64encode(photo_file.read())
-    if pic_data is not None:
-        photo=Photo(data=pic_data,user_id=1)
-        db.session.add(photo)
-        db.session.commit()
+    photo_file=request.files.get('photo')
+    upload_path = os.path.join(basedir, 'static/images', photo_file.filename)
+    photo=Photo(name=photo_file.filename,user_id=1,path=upload_path)
+    db.session.add(photo)
+    db.session.commit()
+    photo_file.save(upload_path)
     return redirect(url_for('.user',username='qingyu.wang@aliyun.com'))
 
 @main.route('/download/<int:id>')
 def download(id):
     photo=Photo.query.filter_by(id=id).first()
-    pic_data=photo.data
-    return render_template('photo.html',pic_data=pic_data)
+    upload_path = os.path.join(basedir, 'static/images', photo.name)
+    print(upload_path)
+    photo_file=open(upload_path,"rb").read()
+    response = make_response(photo_file)
+    response.headers['Content-Type'] = 'image/png'
+    return response
