@@ -25,9 +25,9 @@ def login():
         username=form.username.data
         user=User.query.filter_by(username=username).first()
         if user is not None and form.password.data==user.password:
-            next=request.args.get('next')
-            if next is not None:
-                return redirect(next)
+            redirect_uri=request.args.get('redirect_uri')
+            if redirect_uri is not None:
+                return redirect('auth?redirect_uri='+redirect_uri+'&correct=true')
             return redirect(url_for('.user',username=username))
         form.username.data=' '
     return render_template('login.html',form=form)
@@ -59,14 +59,23 @@ def up():
     db.session.add(photo)
     db.session.commit()
     photo_file.save(upload_path)
-    return redirect(url_for('.user',username='qingyu.wang@aliyun.com'))
+    return redirect(url_for('.user',username='qingyu.wang@aliyun.com'))#to be change
 
 @main.route('/download/<int:id>')
 def download(id):
     photo=Photo.query.filter_by(id=id).first()
-    upload_path = os.path.join(basedir, 'static/images', photo.name)
-    print(upload_path)
-    photo_file=open(upload_path,"rb").read()
-    response = make_response(photo_file)
-    response.headers['Content-Type'] = 'image/png'
-    return response
+    if photo is None:
+        return 'no such photo'
+    else:
+        upload_path = os.path.join(basedir, 'static/images', photo.name)
+        photo_file=open(upload_path,"rb").read()
+        response = make_response(photo_file)
+        response.headers['Content-Type'] = 'image/png'
+        return response
+
+@main.route('/delete/<int:id>')
+def delete(id):
+    photo=Photo.query.filter_by(id=id).first()
+    db.session.delete(photo)
+    db.session.commit()
+    return redirect(url_for('.user',username='qingyu.wang@aliyun.com'))#to be change
