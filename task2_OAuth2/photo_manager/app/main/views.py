@@ -18,7 +18,7 @@ def user(username):
     photos=[]
     for u in User.query.filter_by(username=username).first().photos:
         photos.append(u)
-    return render_template('user.html',photos=photos)
+    return render_template('user.html',photos=photos,username=username)
 
 @main.route('/login', methods=['GET','POST'])
 def login():
@@ -47,22 +47,23 @@ def signup():
         return redirect(url_for('main.login'))
     return render_template('signup.html',form=form)
 
-@main.route('/upload/')
+@main.route('/upload/<username>')
 #@login_required
-def upload():
-    return render_template('up.html')
+def upload(username):
+    return render_template('up.html',username=username)
 
 
-@main.route('/up',methods=['POST'])
+@main.route('/up/<username>',methods=['POST'])
 #@login_required
-def up():
+def up(username):
     photo_file=request.files.get('photo')
+    user=User.query.filter_by(username=username).first()
     upload_path = os.path.join(basedir, 'static/images', photo_file.filename)
-    photo=Photo(name=photo_file.filename,user_id=1,path=upload_path)
+    photo=Photo(name=photo_file.filename,user_id=user.id,path=upload_path)
     db.session.add(photo)
     db.session.commit()
     photo_file.save(upload_path)
-    return redirect(url_for('.user',username='qingyu.wang@aliyun.com'))#to be change
+    return redirect(url_for('.user',username=user.username))#to be change
 
 @main.route('/download/<int:id>')
 def download(id):
