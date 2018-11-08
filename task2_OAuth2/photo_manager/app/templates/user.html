@@ -1,0 +1,4 @@
+{% for p in photos %}
+<a href={{url_for('main.download',id=p.id)}}>{{p.name}}</a>
+<a href={{url_for('main.delete',id=p.id)}}>{{p.name}}</a>
+{% endfor %}

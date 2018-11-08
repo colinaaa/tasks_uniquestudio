@@ -15,7 +15,10 @@ def index():
 
 @main.route('/user/<username>',methods=['GET','POST'])
 def user(username):
-    return 'test'
+    photos=[]
+    for u in User.query.filter_by(username=username).first().photos:
+        photos.append(u)
+    return render_template('user.html',photos=photos)
 
 @main.route('/login', methods=['GET','POST'])
 def login():
@@ -44,7 +47,7 @@ def signup():
         return redirect(url_for('main.login'))
     return render_template('signup.html',form=form)
 
-@main.route('/upload')
+@main.route('/upload/')
 #@login_required
 def upload():
     return render_template('up.html')
