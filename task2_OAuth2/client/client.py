@@ -23,5 +23,15 @@ def passport():
 @app.route('/edit_photo')
 def edit_photo():
     username=request.args.get('user')
-    return render_template('edit_photo.html',username=username)
+    token=request.args.get('token')
+    premission=request.args.get('token')
+    return render_template('edit_photo.html',username=username,token=token,redirect_uri=redirect_uri)
 
+upload_api_url='http://localhost:5000/upload_api'
+@app.route('/upload',methods=['GET','POST'])
+def upload():
+    username=request.args.get('username')
+    token=request.args.get('token')
+    premission=request.args.get('premission')
+    redirect_uri=request.args.get('redirect_uri')
+    return render_template('upload.html',upload_api_url=upload_api_url,username=username,client_id=client_id,token=token,premission=premission,redirect_uri=redirect_uri)
