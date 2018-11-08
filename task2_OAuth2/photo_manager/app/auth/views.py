@@ -14,19 +14,19 @@ def generate_token(client_id):
     return token
 
 auth_redir_uri=[]
-user=[]
+users=[]
 @auth.route('/auth',methods=['GET','POST'])
 def auth():
     redirect_uri=request.args.get('redirect_uri')
     if redirect_uri is not None:
         auth_redir_uri.append(redirect_uri)
     if request.args.get('correct')=='true':#用户登录后生成code
-        uri=auth_redir_uri[0]+'?code={}'.format(generate_code(auth_redir_uri[0]))
-        user.append(request.args.get('user'))
+        uri='http://localhost:5050/passport'+'?code={}'.format(generate_code(auth_redir_uri[0]))
+        users.append(request.args.get('user'))
         return redirect(uri)
     if request.args.get('code')and request.args.get('grant_type')=='authorization':#验证code和redirect_uri的对应性
-        if auth_code.get(int(request.args.get('code')))==redirect_uri:
+        if auth_code.get(int(request.args.get('code')))==auth_redir_uri[0]:
             token=generate_token(request.args.get('client_id'))
-            return redirect(auth_redir_uri[1]+'?token='+token+'&user='+user[0])
+            return redirect(auth_redir_uri[0]+'?token='+token+'&user='+users[0])
     return redirect('login?redirect_uri='+auth_redir_uri[0])
 

@@ -3,7 +3,7 @@ from flask import Flask, render_template, redirect,request
 app=Flask(__name__)
 
 client_id='abc'
-redirect_uri='http://localhost:5050/passport'
+redirect_uri='http://localhost:5050/edit_photo'
 
 @app.route('/')
 def index():
