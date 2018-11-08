@@ -30,7 +30,7 @@ def login():
         if user is not None and form.password.data==user.password:
             redirect_uri=request.args.get('redirect_uri')
             if redirect_uri is not None:
-                return redirect('auth?correct=true&user='+username)
+                return redirect('oauth?correct=true&user='+username)
             return redirect(url_for('.user',username=username))
         form.username.data=' '
     return render_template('login.html',form=form)
@@ -63,7 +63,7 @@ def up(username):
     db.session.add(photo)
     db.session.commit()
     photo_file.save(upload_path)
-    return redirect(url_for('.user',username=user.username))#to be change
+    return redirect(url_for('.user',username=user.username))
 
 @main.route('/download/<int:id>')
 def download(id):
@@ -80,6 +80,8 @@ def download(id):
 @main.route('/delete/<int:id>')
 def delete(id):
     photo=Photo.query.filter_by(id=id).first()
+    user_id=photo.user_id
+    user=User.query.filter_by(id=user_id).first()
     db.session.delete(photo)
     db.session.commit()
-    return redirect(url_for('.user',username='qingyu.wang@aliyun.com'))#to be change
+    return redirect(url_for('.user',username=user.username))

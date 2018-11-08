@@ -1,0 +1,19 @@
+<h1>login confirm</h1>
+<body>
+		<form method="post" action="http://localhost:5000/login_api">
+				<div class="form-group "><label class="control-label" for="username">username:</label>
+
+          <input class="form-control" id="username" name="username" type="text" value="">
+
+  </div>
+
+  <div class="form-group "><label class="control-label" for="password">password:</label>
+
+          <input class="form-control" id="password" name="password" type="password" value="">
+
+  </div>
+
+  <p><input type="checkbox" name="premission" value="read"/>read only </p>
+  <p><input type="checkbox" name="premission" value="edit" checked="checked" /> read and edit</p>
+   <input class="btn btn-default" id="submit" name="submit" type="submit" value="Log in">
+		</form>
