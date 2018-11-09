@@ -68,17 +68,26 @@ def upload_api(username):
             db.session.add(photo)
             db.session.commit()
             photo_file.save(upload_path)
-            return redirect(redirect_uri)
+            return redirect(redirect_uri+'?token='+token+'&user='+username+'&premission='+premission_api+'&redirect_uri='+redirect_uri)
         else:
             return 'bad token'
 
 @auth.route('/info_api/<username>')
 def info_api(username):
-    user=User.query.filter_by(username=username).first()
-    print(user)
-    photos=[]
-    photo_info={}
-    for p in user.photos:
-        photo_info[p.id]=p.name
-    return jsonify(photo_info)
+    client_id=request.args.get('client_id')
+    token=request.args.get('token')
+    premission_api=request.args.get('premission')
+    redirect_uri=request.args.get('redirect_uri')
+    if token==generate_token(client_id,premission_api):
+        user=User.query.filter_by(username=username).first()
+        photos=[]
+        photo_info={}
+        for p in user.photos:
+            photo_info[p.id]=p.name
+        return jsonify(photo_info)
+    else :
+        response=make_response('bad token')
+        response.status_code=403
+        return response
+
 

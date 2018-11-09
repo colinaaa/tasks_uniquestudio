@@ -5,7 +5,7 @@ from .. import db
 from ..models import User, Photo
 import os
 import base64
-#from flask_login import login_required, current_user
+#from flask_login import login_required, current_use
 
 basedir=os.path.abspath(os.path.dirname(__file__))
 
