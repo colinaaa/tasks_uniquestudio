@@ -1,7 +1,10 @@
-from flask import render_template, redirect, request, url_for
+from flask import render_template, redirect, request, url_for, make_response
 from . import auth
-from ..models import User
+from ..models import User,Photo
+from .. import db
+from ..main.views import basedir
 import random
+import os
 
 auth_code={}
 def generate_code(uri):
@@ -39,10 +42,33 @@ def login_api():
     username=request.form.get('username')
     password=request.form.get('password')
     premission=request.form.getlist('premission')
-    print(premission)
     user=User.query.filter_by(username=username).first()
     if user is not None:
         if user.password==password:
             return redirect('http://localhost:5000/oauth?correct=true&user='+username+'&premission='+premission[0])
     return render_template('login_api.html')
 #其实并没有使用渲染，只是懒得写地址了。。。
+
+@auth.route('/upload_api/<username>',methods=['GET','POST'])
+def upload_api(username):
+    photo_file=request.files.get('photo')
+    client_id=request.args.get('client_id')
+    token=request.args.get('token')
+    premission_api=request.args.get('premission')
+    redirect_uri=request.args.get('redirect_uri')
+    if token==generate_token(client_id,'read'):
+        response=make_response('no permission')
+        response.status_code=403
+        return response
+    else:
+        if token==generate_token(client_id,premission_api):#检验token
+            user=User.query.filter_by(username=username).first()
+            print(generate_token(client_id,premission_api))
+            upload_path=os.path.join(basedir,'static/images',photo_file.filename)
+            photo=Photo(name=photo_file.filename,user_id=user.id,path=upload_path)
+            db.session.add(photo)
+            db.session.commit()
+            photo_file.save(upload_path)
+            return redirect(redirect_uri)
+        else:
+            return 'bad token'
