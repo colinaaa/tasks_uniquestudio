@@ -1,4 +1,4 @@
-from flask import render_template, redirect, request, url_for, make_response
+from flask import render_template, redirect, request, url_for, make_response, jsonify
 from . import auth
 from ..models import User,Photo
 from .. import db
@@ -49,7 +49,7 @@ def login_api():
     return render_template('login_api.html')
 #其实并没有使用渲染，只是懒得写地址了。。。
 
-@auth.route('/upload_api/<username>',methods=['GET','POST'])
+@auth.route('/upload_api/<username>',methods=['POST'])
 def upload_api(username):
     photo_file=request.files.get('photo')
     client_id=request.args.get('client_id')
@@ -63,7 +63,6 @@ def upload_api(username):
     else:
         if token==generate_token(client_id,premission_api):#检验token
             user=User.query.filter_by(username=username).first()
-            print(generate_token(client_id,premission_api))
             upload_path=os.path.join(basedir,'static/images',photo_file.filename)
             photo=Photo(name=photo_file.filename,user_id=user.id,path=upload_path)
             db.session.add(photo)
@@ -72,3 +71,14 @@ def upload_api(username):
             return redirect(redirect_uri)
         else:
             return 'bad token'
+
+@auth.route('/info_api/<username>')
+def info_api(username):
+    user=User.query.filter_by(username=username).first()
+    print(user)
+    photos=[]
+    photo_info={}
+    for p in user.photos:
+        photo_info[p.id]=p.name
+    return jsonify(photo_info)
+
