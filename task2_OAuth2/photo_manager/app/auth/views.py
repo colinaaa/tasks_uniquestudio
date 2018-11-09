@@ -5,6 +5,7 @@ from .. import db
 from ..main.views import basedir
 import random
 import os
+import requests
 
 auth_code={}
 def generate_code(uri):
@@ -90,4 +91,25 @@ def info_api(username):
         response.status_code=403
         return response
 
+@auth.route('/delete_api/<int:id>')
+def delete_api(id):
+    token=request.args.get('token')
+    premission_api=request.args.get('premission')
+    print(premission_api)
+    client_id=request.args.get('client_id')
+    redirect_uri=request.args.get('redirect_uri')
+    delete_url='http://localhost:5000/delete/'
+    if premission_api=='edit':
+        if token==generate_token(client_id,premission_api):
+            r=requests.get(delete_url+str(id))
+            return redirect(redirect_uri)
+        else:
+            response=make_response('bad token')
+            response.status_code=403
+            return response
+    else:
+        response=make_response('no permission')
+        response.status_code=403
+        return response
 
+    
