@@ -28,9 +28,6 @@ def login():
         username=form.username.data
         user=User.query.filter_by(username=username).first()
         if user is not None and form.password.data==user.password:
-            redirect_uri=request.args.get('redirect_uri')
-            if redirect_uri is not None:
-                return redirect('oauth?correct=true&user='+username)
             return redirect(url_for('.user',username=username))
         form.username.data=' '
     return render_template('login.html',form=form)

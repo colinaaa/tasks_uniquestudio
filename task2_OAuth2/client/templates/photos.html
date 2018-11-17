@@ -1,0 +1,5 @@
+{% for id in photo_ids%}
+<a href="{{download_url}}/{{id}}" >download{{photos_dict[id]}}</a>
+<a href="{{delete_url}}/{{id}}?token={{token}}&premission={{premission}}&client_id={{client_id}}&redirect_uri={{redirect_uri}}" >delete{{photos_dict[id]}}</a>
+</br>
+{% endfor %}
