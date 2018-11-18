@@ -11,9 +11,10 @@
 #include<sys/epoll.h>
 #include<fcntl.h>
 #include<errno.h>
+#include<string.h>//for strncmp
 
 #define BACKLOG 10
-#define PORT 9998
+#define PORT 9999
 #define EPOLL_SIZE 4096
 #define READ_SIZE 1024
 
