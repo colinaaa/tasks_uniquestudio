@@ -15,6 +15,7 @@
 
 #define BACKLOG 10
 #define PORT 9999
+#define MAXBUFFER 1024
 #define EPOLL_SIZE 4096
 #define READ_SIZE 1024
 
@@ -22,9 +23,9 @@ void set_non_blocking(int);
 void add_event(int, int, int);
 void event_modify(int, int, int);
 void event_delete(int, int, int);
-void handle_events(int, int, struct epoll_event*, int, char*);
-int e_read(int, int, char*);
-int e_write(int, int, char*);
+void handle_events(int, int, struct epoll_event*, int);
+int e_read(int, int);
+int e_write(int, int);
 int handle_accept(int, int);
 int Socket(int, int, int);
 int Bind(int, struct sockaddr*, socklen_t);

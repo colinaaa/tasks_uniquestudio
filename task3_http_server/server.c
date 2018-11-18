@@ -1,4 +1,5 @@
 #include"server.h"
+#include<signal.h>
 
 int main(void)
 {
@@ -8,8 +9,8 @@ int main(void)
 		struct epoll_event events[100];//用来存放events(obviously...)
 		int epollfd;
 		int ready_events;//epoll中准备好的events个数
-		char buf[4096];
-
+		
+		sigaction(SIGPIPE, &(struct sigaction){SIG_IGN}, NULL);//忽略SIGPIPE错误（向已关闭的fd中write）暂时还没想到更好的解决办法。。stack overflow上找了这个。。
 		listenfd=Socket(AF_INET, SOCK_STREAM, 0);
 		set_non_blocking(listenfd);
 		printf("listenfd%d\n",listenfd);
@@ -26,7 +27,8 @@ int main(void)
 		{
 				printf("waiting...\n");
 				ready_events=epoll_wait(epollfd, events, 100, -1);
-				handle_events(epollfd, listenfd, events, ready_events, buf);
+				printf("%devents ready\n",ready_events);
+				handle_events(epollfd, listenfd, events, ready_events);
 		}
 		return 0;
 
@@ -55,7 +57,7 @@ void add_event(int epollfd, int fd, int state)
 		epoll_ctl(epollfd, EPOLL_CTL_ADD, fd, &ev);//将fd添加至epoll监测
 }
 
-void handle_events(int epollfd, int listenfd, struct epoll_event* events, int ready_events, char* buf)
+void handle_events(int epollfd, int listenfd, struct epoll_event* events, int ready_events)
 {
 		int i;
 		for(i=0;i<ready_events;i++)
@@ -68,11 +70,11 @@ void handle_events(int epollfd, int listenfd, struct epoll_event* events, int re
 				}
 				else if(events[i].events&EPOLLIN)
 				{
-						e_read(epollfd, fd, buf);
+						e_read(epollfd, fd);
 				}
 				else if(events[i].events&EPOLLOUT)
 				{
-						e_write(epollfd, fd, buf);
+						e_write(epollfd, fd);
 				}
 		}
 }
@@ -94,9 +96,10 @@ int handle_accept(int listenfd, int epollfd)
 		}
 }
 
-int e_read(int epollfd, int fd, char* buf)
+int e_read(int epollfd, int fd)
 {
 		int nread;
+		char buf[MAXBUFFER];
 		int n=0,i=0;
 		size_t nleft=sizeof(buf);
 		while((nread=read(fd,buf+n,READ_SIZE))>0)//精妙的指针操作。。
@@ -122,8 +125,10 @@ int e_read(int epollfd, int fd, char* buf)
 		event_modify(epollfd, fd, EPOLLOUT);
 }
 
-int e_write(int epollfd, int fd, char* buf)
+int e_write(int epollfd, int fd)
 {
+		char buf[MAXBUFFER];
+		bzero(buf,MAXBUFFER);
 		int nwrite, data_size=sizeof(buf);
 		int n=data_size;
 		while(n>0)
@@ -134,10 +139,11 @@ int e_write(int epollfd, int fd, char* buf)
 				{
 						if (nwrite==-1&&errno!=EAGAIN)
 						{
-								close(fd);
 								printf("writefd close\n");
 								event_delete(epollfd, fd, EPOLLOUT);
+								close(fd);
 								printf("write error\n");
+								break;
 						}
 				}
 				n-=nwrite;
