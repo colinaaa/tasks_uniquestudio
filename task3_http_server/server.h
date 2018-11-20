@@ -26,8 +26,9 @@
 class Socket
 {
         private:
-            	int socketfd;
             	struct sockaddr_in sock_addr;
+            	int socketfd;
+		protected:
 				void set_non_blocking();
         public:
             	int get_fd(){return socketfd;};

@@ -6,17 +6,17 @@ Socket::Socket(int fd, struct sockaddr_in* addr):socketfd(fd), sock_addr(*addr){
 
 Socket::~Socket()
 {
-    	close(socketfd);
+    	close(get_fd());
     	cout<<"socket closed"<<endl;
 }
 
 void Socket::set_non_blocking()
 {
         int opts;
-        opts = fcntl(socketfd, F_GETFL,0);
+        opts = fcntl(get_fd(), F_GETFL,0);
         EXIT_IF(opts<0,"fcntl GET wrong\n");
         opts = (opts | O_NONBLOCK);
-        EXIT_IF(fcntl(socketfd, F_SETFL, opts) < 0, "fcntl SET wrong\n");
+        EXIT_IF(fcntl(get_fd(), F_SETFL, opts) < 0, "fcntl SET wrong\n");
 }
 
 ListenSocket::ListenSocket(int listenfd, struct sockaddr_in* servaddr):Socket(listenfd, servaddr)
