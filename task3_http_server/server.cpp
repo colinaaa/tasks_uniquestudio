@@ -2,72 +2,57 @@
 #include<iostream>
 using namespace std;
 
-class Socket
-{
-    private:
-        int socketfd;
-        struct sockaddr_in servaddr, cliaddr;
-        void Bind();
-        void Listen();
-    public:
-        int get_fd();
-        void initilize();//bind and listen
-        Socket();
-        ~Socket();
-};
-
-int Socket::get_fd()
-{
-    return socketfd;
-}
-
 Socket::Socket()
 {
-    int listenfd;
-    if((listenfd=socket(AF_INET, SOCK_STREAM, 0)<0))
-    {
-        std::cout<<"socket wrong"<<std::endl;
-    }
-    servaddr.sin_family=AF_INET;
-    servaddr.sin_port=htons(PORT);
-    servaddr.sin_addr.s_addr=htonl(INADDR_ANY);
-    socketfd=listenfd;
-    std::cout<<"socket created"<<std::endl;
 }
 
 Socket::~Socket()
 {
-    close(socketfd);
-    std::cout<<"socket closed"<<std::endl;
+    	close(socketfd);
+    	cout<<"socket closed"<<endl;
 }
 
 void Socket::Bind()
 {
-    if(bind(socketfd,(struct sockaddr*)&servaddr, sizeof(servaddr))<0)
-    {
-        std::cout<<"bind wrong"<<std::endl;
-    }
+		int b=::bind(socketfd, (struct sockaddr*)&sock_addr, sizeof(sock_addr));
+		EXIT_IF(b<0, "bind wrong\n, errno:%d %s",errno, strerror(errno));
 }
 
 void Socket::Listen()
 {
-    if(listen(socketfd, BACKLOG)<0)
-    {
-        std::cout<<"listen wrong"<<std::endl;
-    }
+		int l=listen(socketfd, BACKLOG);
+		EXIT_IF(l<0, "listen wrong\n");
 }
 
-void Socket::initilize()
+void Socket::initilize_listen()
 {
-    Bind();
-    Listen();
-    std::cout<<"socket bind at: "<<servaddr.sin_addr.s_addr<<"and keep listening!"<<std::endl;
+		short port=PORT;
+		socketfd=socket(AF_INET, SOCK_STREAM, 0);
+		EXIT_IF(socketfd<0, "socket wrong\n");
+		sock_addr.sin_addr.s_addr=htonl(INADDR_ANY);
+		sock_addr.sin_port=htons(PORT);
+		sock_addr.sin_family=htonl(AF_INET);
+    	Bind();
+    	Listen();
+		set_non_blocking();
+    	cout<<"listening socket bind at: "<<"127.0.0.1:"<<ntohs(sock_addr.sin_port)<<"and keep listening!"<<endl;
 }
-
+void Socket::set_non_blocking()                                             
+{
+        int opts;
+        opts = fcntl(socketfd, F_GETFL,0);
+        EXIT_IF(opts<0,"fcntl GET wrong\n");
+        opts = (opts | O_NONBLOCK);
+        EXIT_IF(fcntl(socketfd, F_SETFL, opts) < 0, "fcntl SET wrong\n");
+}     
 int main()
 {
-    class Socket my_socket;
-    my_socket.initilize();
-    std::cout<<"socket init"<<std::endl;
-    return 0;
+    	class Socket my_socket;
+    	my_socket.initilize_listen();
+    	cout<<"socket init"<<endl;
+		for(;;)
+		{
+
+		}
+    	return 0;
 }

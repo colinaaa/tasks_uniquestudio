@@ -19,15 +19,24 @@
 #define EPOLL_SIZE 4096
 #define READ_SIZE 1024
 
-void set_non_blocking(int);
-void add_event(int, int, int);
-void event_modify(int, int, int);
-void event_delete(int, int, int);
-void handle_events(int, int, struct epoll_event*, int);
-int e_read(int, int);
-int e_write(int, int);
-int handle_accept(int, int);
-int Socket(int, int, int);
-int Bind(int, struct sockaddr*, socklen_t);
-int Listen(int, int);
+#define EXIT_IF(r,...) if(r){\
+						printf("__VA_ARGS__");\
+						printf("%s:%d error no:%d msg:%s",__FILE__, __LINE__, errno, strerror(errno));\
+						exit(1);}
+class Socket
+{
+        private:
+            int socketfd;
+            struct sockaddr_in sock_addr;
+            void Bind();
+            void Listen();
+            void set_non_blocking();
+            void initilize_listen();//bind and listen
+        public:
+            int get_fd(){return socketfd;};
+            int get_addr(){return sock_addr.sin_addr.s_addr};
+            Socket();
+            ~Socket();
+};
+
 #endif
