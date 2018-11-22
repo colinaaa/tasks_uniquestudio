@@ -2,14 +2,25 @@
 #include<iostream>
 using namespace std;
 
-Socket::Socket(int fd, struct sockaddr_in* addr):socketfd(fd), sock_addr(*addr){}//有fd和地址的构造函数(for connect socket)
-
 Socket::~Socket()
 {
     	close(get_fd());
 		if(TEST_OUTPUT)
     			cout<<"socket obj closed"<<endl;
 }
+Socket::Socket(int fd, struct sockaddr_in* addr):socketfd(fd), sock_addr(*addr)
+{
+		cout<<"init socket"<<endl;
+}//有fd和地址的构造函数(for connect socket)
+void set_non_blocking(int fd)
+{
+        int opts;
+        opts = fcntl(fd, F_GETFL,0);
+        EXIT_IF(opts<0,"fcntl GET wrong\n");
+        opts = (opts | O_NONBLOCK);
+        EXIT_IF(fcntl(fd, F_SETFL, opts) < 0, "fcntl SET wrong\n");
+}
+
 
 void Socket::set_non_blocking()
 {
@@ -62,7 +73,7 @@ ConnectSocket::ConnectSocket(int fd, struct sockaddr_in* addr):Socket(fd, addr)
 {
 		if(TEST_OUTPUT)
 				cout<<"got connection from"<<inet_ntoa(get_addr()->sin_addr)<<":"<<ntohs(get_addr()->sin_port)<<endl;
-};
+}
 
 Epoll::Epoll()
 {
@@ -75,7 +86,7 @@ void Epoll::event_add(int fd, int state)
 		struct epoll_event ev;
 		ev.data.fd=fd;
 		ev.events=state|EPOLLET;
-		fd_ev[fd]=&ev;
+		fd_ev[fd]=ev;
 		int r=epoll_ctl(epollfd, EPOLL_CTL_ADD, fd, &ev);
 		EXIT_IF(r<0, "event add wrong\n");
 		if(TEST_OUTPUT)
@@ -87,8 +98,8 @@ void Epoll::event_delete(int fd)
 		//struct epoll_event ev;
 		//ev.data.fd=fd;
 		//ev.events=state|EPOLLET;
-		struct epoll_event* ev=fd_ev[fd];
-		int r=epoll_ctl(epollfd, EPOLL_CTL_DEL, fd, ev);
+		struct epoll_event ev=fd_ev[fd];
+		int r=epoll_ctl(epollfd, EPOLL_CTL_DEL, fd, &ev);
 		EXIT_IF(r<0, "event delete wrong\n");
 		if(TEST_OUTPUT)
 				cout<<"event deleted"<<endl;
@@ -97,15 +108,18 @@ void Epoll::event_delete(int fd)
 void Epoll::event_modify(int fd, int state)
 {
 		//struct epoll_event ev;
-		struct epoll_event* ev=fd_ev[fd];
-		ev->events=state|EPOLLET;
-		int r=epoll_ctl(epollfd, EPOLL_CTL_MOD, fd, ev);
+		struct epoll_event ev=fd_ev[fd];
+		ev.events=state|EPOLLET;
+		if(TEST_OUTPUT)
+				cout<<"modifing"<<endl;
+		int r=epoll_ctl(epollfd, EPOLL_CTL_MOD, fd, &ev);
+		EXIT_IF(r<0,"modify wrong\n");
 }
 char* Epoll::e_read(int fd, char* buf)
 {
 		int nread;
 		int n=0;
-		size_t nleft=sizeof(buf);
+		size_t nleft=MAXBUFFER;
 		while ((nread=read(fd, buf+n, READ_SIZE))>0)
 		{
 				n+=nread;
@@ -133,8 +147,9 @@ char* Epoll::e_read(int fd, char* buf)
 int Epoll::e_write(int fd, const char* buf)
 {
 		int nwrite;
-		size_t data_size=sizeof(buf);
+		size_t data_size=MAXBUFFER;
 		int n=data_size;
+		cout<<"write fd:"<<fd<<endl;
 		while(n>0)
 		{
 				nwrite=(write(fd, buf+data_size-n, n));
@@ -170,8 +185,14 @@ void HTTPServer::loop(Epoll& epoll)
 
 void HTTPServer::handle_accept(Epoll& epoll)
 {
-		ConnectSocket connectsock=listensocket.Accept();
-		epoll.event_add(connectsock.get_fd(), EPOLLIN);
+		int connectfd;
+		struct sockaddr_in cliaddr;
+		socklen_t len=sizeof(cliaddr);
+		connectfd=accept(listensocket.get_fd(), (struct sockaddr*)&cliaddr, &len);
+		set_non_blocking(connectfd);
+		cout<<"got connection from"<<inet_ntoa(cliaddr.sin_addr)<<":"<<ntohs(cliaddr.sin_port)<<endl;
+		addr_map[connectfd]=cliaddr;
+		epoll.event_add(connectfd, EPOLLIN);
 }
 
 void HTTPServer::handle_events(Epoll& epoll, int ready_events)
@@ -180,6 +201,7 @@ void HTTPServer::handle_events(Epoll& epoll, int ready_events)
 		for(i=0; i<ready_events; i++)
 		{
 				int fd=epoll.active_evs[i].data.fd;
+				cout<<"handle fd:"<<fd<<endl;
 				int events=epoll.active_evs[i].events;
 				if((fd==listensocket.get_fd())&& events&EPOLLIN)
 				{
@@ -205,6 +227,9 @@ void HTTPServer::handle_events(Epoll& epoll, int ready_events)
 int HTTPServer::parse_request(Epoll& epoll, int connectfd)
 {
 		char read_buf[MAXBUFFER];
+		bzero(read_buf,MAXBUFFER);
+		if(TEST_OUTPUT)
+				cout<<"parsing"<<endl;
 		epoll.e_read(connectfd, read_buf);
 		if(TEST_OUTPUT)
 				printf("read:%s\n",read_buf);
@@ -217,14 +242,19 @@ int HTTPServer::parse_request(Epoll& epoll, int connectfd)
 
 void HTTPServer::make_response(Epoll& epoll, int connectfd)
 {
+		//req=reqs_map[connectfd];
 		char write_buf[MAXBUFFER]="HTTP/1.1 200 OK\r\nContent-Length: 12\r\n\r\nHello World!";
 		epoll.e_write(connectfd, write_buf);
 		if(TEST_OUTPUT)
 				cout<<"made response"<<endl;
+		//keep-alive
+		epoll.event_delete(connectfd);
+		close(connectfd);
 }
 
 int main()
 {
+		signal(SIGPIPE, SIG_IGN);
 		int listenfd=socket(AF_INET, SOCK_STREAM, 0);
 		EXIT_IF(listenfd<0,"socket wrong\n");
 		struct sockaddr_in servaddr;

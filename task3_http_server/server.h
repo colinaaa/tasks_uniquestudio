@@ -15,6 +15,7 @@
 #include<vector>
 #include<string.h>//for strncmp
 #include<utility>
+#include<signal.h>
 
 #define BACKLOG 10
 #define PORT 9999
@@ -23,13 +24,13 @@
 #define EPOLL_SIZE 4096
 #define READ_SIZE 1024
 #define TEST_OUTPUT 1
-
 #define EXIT_IF(r,...) if(r){\
 						printf(__VA_ARGS__);\
 						printf("%s:%d\n, errno:%d, msg:%s",__FILE__, __LINE__,errno, strerror(errno));\
 						exit(1);}
 class ConnectSocket;
 class Epoll;
+class HTTPServer;
 class Socket
 {
         private:
@@ -61,9 +62,9 @@ class ListenSocket:public Socket
 class ConnectSocket:public Socket
 {
 		public:
-				ConnectSocket(){};
 				ConnectSocket(int, struct sockaddr_in*);
 				~ConnectSocket(){};
+				ConnectSocket(const ConnectSocket&);
 };
 typedef struct HttpReq
 {
@@ -72,12 +73,27 @@ typedef struct HttpReq
 		std::string path;
 		std::string body;
 }HttpReq;
-
+//typedef struct HttpRes
+//{
+//		int status_code;
+//		std::vector<std::pair<std::string, std::string>>Headers;
+//		bool connection;
+//		int content_length;
+//		std::string content_type;
+//		std::string body;
+//}HttpRes;
+//struct Con
+//{
+//		ConnectSocket consocket;
+//		HttpReq req;
+//};
+//std::map<int, Con>connections;
 class HTTPServer
 {
 		private:
-				std::map<int, HttpReq>requests;
 				ListenSocket listensocket;
+				std::map<int, HttpReq>reqs_map;
+				std::map<int, struct sockaddr_in>addr_map;
 		public:
 				void loop(Epoll&);
 				void handle_events(Epoll&, int);
@@ -87,7 +103,7 @@ class HTTPServer
 				HTTPServer(int, struct sockaddr_in*);
 				~HTTPServer(){};
 };
-class Epoll
+class Epoll//eventloop
 {
 		//uses-a relation
 		friend class HTTPServer;
@@ -95,7 +111,7 @@ class Epoll
 				int epollfd;
 				struct epoll_event* active_evs;
 				int maxevs;
-				std::map<int, epoll_event*>fd_ev;
+				std::map<int, epoll_event>fd_ev;
 		public:
 				char* e_read(int, char*);
 				int e_write(int, const char*);
