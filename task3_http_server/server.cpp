@@ -6,7 +6,9 @@ Socket::~Socket()
 {
     	close(get_fd());
 		if(TEST_OUTPUT)
+		{
     			cout<<"socket obj closed"<<endl;
+		}
 }
 Socket::Socket(int fd, struct sockaddr_in* addr):socketfd(fd), sock_addr(*addr)
 {
@@ -34,7 +36,9 @@ void Socket::set_non_blocking()
 ListenSocket::ListenSocket(int listenfd, struct sockaddr_in* servaddr):Socket(listenfd, servaddr)
 {
 		if(TEST_OUTPUT)
+		{
 				cout<<"create a listen socket obj\n";
+		}
 }
 
 void ListenSocket::init()
@@ -72,7 +76,9 @@ ConnectSocket ListenSocket::Accept()
 ConnectSocket::ConnectSocket(int fd, struct sockaddr_in* addr):Socket(fd, addr)
 {
 		if(TEST_OUTPUT)
+		{
 				cout<<"got connection from"<<inet_ntoa(get_addr()->sin_addr)<<":"<<ntohs(get_addr()->sin_port)<<endl;
+		}
 }
 
 Epoll::Epoll()
@@ -90,7 +96,9 @@ void Epoll::event_add(int fd, int state)
 		int r=epoll_ctl(epollfd, EPOLL_CTL_ADD, fd, &ev);
 		EXIT_IF(r<0, "event add wrong\n");
 		if(TEST_OUTPUT)
+		{
 				cout<<"event added,"<<"fd: "<<fd<<endl;
+		}
 }
 
 void Epoll::event_delete(int fd)
@@ -102,7 +110,9 @@ void Epoll::event_delete(int fd)
 		int r=epoll_ctl(epollfd, EPOLL_CTL_DEL, fd, &ev);
 		EXIT_IF(r<0, "event delete wrong\n");
 		if(TEST_OUTPUT)
+		{
 				cout<<"event deleted"<<endl;
+		}
 }
 
 void Epoll::event_modify(int fd, int state)
@@ -111,11 +121,13 @@ void Epoll::event_modify(int fd, int state)
 		struct epoll_event ev=fd_ev[fd];
 		ev.events=state|EPOLLET;
 		if(TEST_OUTPUT)
+		{
 				cout<<"modifing"<<endl;
+		}
 		int r=epoll_ctl(epollfd, EPOLL_CTL_MOD, fd, &ev);
 		EXIT_IF(r<0,"modify wrong\n");
 }
-char* Epoll::e_read(int fd, char* buf)
+int Epoll::e_read(int fd, char* buf)
 {
 		int nread;
 		int n=0;
@@ -123,8 +135,6 @@ char* Epoll::e_read(int fd, char* buf)
 		while ((nread=read(fd, buf+n, READ_SIZE))>0)
 		{
 				n+=nread;
-				if(TEST_OUTPUT)
-						cout<<"read: "<<nread<<endl;
 		}
 		if(nread==-1&&errno!=EAGAIN)
 		{
@@ -139,15 +149,16 @@ char* Epoll::e_read(int fd, char* buf)
 				close(fd);
 		}
 		if(TEST_OUTPUT)
-				printf("receive:%s",buf);
-		return buf;
+		{
+				printf("receive:%s\n",buf);
+		}
+		return n;
 		//event_modify(fd, EPOLLOUT);在httpser中转换
 }
 
-int Epoll::e_write(int fd, const char* buf)
+int Epoll::e_write(int fd, const char* buf, int data_size)
 {
 		int nwrite;
-		size_t data_size=MAXBUFFER;
 		int n=data_size;
 		cout<<"write fd:"<<fd<<endl;
 		while(n>0)
@@ -159,7 +170,9 @@ int Epoll::e_write(int fd, const char* buf)
 						event_delete(fd);
 						close(fd);
 						if(TEST_OUTPUT)
+						{
 								cout<<"connectfd close"<<endl;
+						}
 						break;
 				}
 				n-=nwrite;
@@ -170,13 +183,17 @@ int Epoll::e_write(int fd, const char* buf)
 HTTPServer::HTTPServer(int listenfd, struct sockaddr_in* servaddr):listensocket(listenfd, servaddr)
 {
 		if(TEST_OUTPUT)
+		{
 				cout<<"server build"<<endl;
+		}
 }
 
 void HTTPServer::loop(Epoll& epoll)
 {
 		if(TEST_OUTPUT)
+		{
 				cout<<"waiting..."<<endl;
+		}
 		int ready_events=epoll_wait(epoll.epollfd, epoll.active_evs, epoll.maxevs, -1);
 		if(TEST_OUTPUT)
 				cout<<ready_events<<"events ready"<<endl;
@@ -228,28 +245,163 @@ int HTTPServer::parse_request(Epoll& epoll, int connectfd)
 {
 		char read_buf[MAXBUFFER];
 		bzero(read_buf,MAXBUFFER);
-		if(TEST_OUTPUT)
-				cout<<"parsing"<<endl;
-		epoll.e_read(connectfd, read_buf);
-		if(TEST_OUTPUT)
-				printf("read:%s\n",read_buf);
+		int read_bytes=epoll.e_read(connectfd, read_buf);
+		char method[10];
+		char path[1024];
+		char protocol[100];
+		sscanf(read_buf,"%s %s %s", method, path, protocol);
+		string raw_req=read_buf;
+		if(!raw_req.empty())
+		{
+				HttpReq req;
+				req.method=method;
+				req.path=path;
+				size_t body=raw_req.find("\r\n\r\n");
+				req.body=raw_req.substr(body+4);
+				size_t header=raw_req.find("\r\n")+2;
+				string headers=raw_req.substr(header);
+				while(!headers.empty())
+				{
+						//cout<<headers<<endl;
+						size_t i=headers.find(":");
+						size_t j=headers.find("\r\n")+2;
+						if(i==string::npos||j==string::npos)
+						{
+								break;
+						}
+						//cout<<"i: "<<i<<"j:"<<j<<endl;
+						//cout<<"k: "<<headers.substr(0,i)<<endl;
+						//cout<<"v: "<<headers.substr(i+2,j-i-4)<<endl;
+						req.Headers[headers.substr(0,i)]=headers.substr(i+2, j-i-4);
+						headers.erase(0,j);
+				}
+				reqs_map[connectfd]=req;
+		}
 		epoll.event_modify(connectfd, EPOLLOUT);
-		///////////////////
-		////unimplement////
-		///////////////////
 		return 0;
 }
 
 void HTTPServer::make_response(Epoll& epoll, int connectfd)
 {
-		//req=reqs_map[connectfd];
-		char write_buf[MAXBUFFER]="HTTP/1.1 200 OK\r\nContent-Length: 12\r\n\r\nHello World!";
-		epoll.e_write(connectfd, write_buf);
+		HttpReq req;
+		req=reqs_map[connectfd];
+		class HTTPRes res;
+		bool succeed;
+		if(req.method=="GET")
+		{
+				succeed=res.do_get(req.path);
+		}
+		else if(req.method=="POST")
+		{
+				succeed=res.do_post(req.body, req.path);
+		}
+		else if(req.method=="DELETE")
+		{
+				succeed=res.do_delete(req.path);
+		}
+		else
+		{
+				res.status_code=405;
+				res.phrase="Method not allowed";
+		}
+		//if(req.Headers["Connection"])
+		//{
+		//		if(req.Headers["Connection"]=="close")
+		//				res.set_header("Connection", "close");
+		//		else
+		//				res.set_header("Connection", "keep-alive");
+		//}
+		if(succeed)
+		{
+				res.status_code=200;
+				res.phrase="OK";
+		}
+		res.set_header("Content-Type", "text/html")
+				.set_header("Server", "abc")
+				.set_header("Content-Length", to_string(res.count_length()));
+		string Response=res.join_res();
+		int res_len=Response.length();
+		char write_buf[res_len+1];
+		strcpy(write_buf, Response.c_str());
 		if(TEST_OUTPUT)
+		{
+				printf("response message:%s", write_buf);
+		}
+		epoll.e_write(connectfd, write_buf, res_len);
+		if(TEST_OUTPUT)
+		{
 				cout<<"made response"<<endl;
+		}
 		//keep-alive
 		epoll.event_delete(connectfd);
 		close(connectfd);
+}
+
+HTTPRes& HTTPRes::set_header(string key, string value)
+{
+		string Header;
+		Header=key+": "+value;
+		if(TEST_OUTPUT)
+		{
+				cout<<"set_header: "+Header<<endl;
+		}
+		headers.push_back(Header);
+		return *this;
+}
+
+bool HTTPRes::do_get(const string path)
+{
+		string root=ROOT;
+		if(!path_exist(path))
+		{
+				status_code=404;
+				phrase="Not Found";
+				body="try again";
+		}
+		else
+		{
+				//get from root+path
+		}
+		return true;
+}
+
+bool HTTPRes::do_post(const string data, const string path)
+{
+		string root=ROOT;
+		//write data to root+path
+		return true;
+}
+
+bool HTTPRes::do_delete(const string path)
+{
+		string root=ROOT;
+		//delete data to root+path
+		body=true;
+		return true;
+}
+
+int HTTPRes::count_length()
+{
+		return (int)body.length();
+}
+
+bool HTTPRes::path_exist(string path)
+{
+		return false;
+}
+
+const string HTTPRes::join_res()
+{
+		string Headers="";
+		for(int i=0;i<headers.size();i++)
+		{
+				Headers+=headers[i]+"\r\n";
+		}
+		if(TEST_OUTPUT)
+		{
+				cout<<"join: "<<Headers<<endl;
+		}
+		return "HTTP/1.1 "+to_string(status_code)+" "+phrase+"\r\n"+Headers+"\r\n"+body;
 }
 
 int main()

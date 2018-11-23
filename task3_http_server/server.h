@@ -13,9 +13,10 @@
 #include<errno.h>
 #include<map>
 #include<vector>
-#include<string.h>//for strncmp
 #include<utility>
+#include<string>
 #include<signal.h>
+#include<string.h>
 
 #define BACKLOG 10
 #define PORT 9999
@@ -24,6 +25,7 @@
 #define EPOLL_SIZE 4096
 #define READ_SIZE 1024
 #define TEST_OUTPUT 1
+#define ROOT "/home/colin/Documents/"
 #define EXIT_IF(r,...) if(r){\
 						printf(__VA_ARGS__);\
 						printf("%s:%d\n, errno:%d, msg:%s",__FILE__, __LINE__,errno, strerror(errno));\
@@ -68,26 +70,11 @@ class ConnectSocket:public Socket
 };
 typedef struct HttpReq
 {
-		std::vector<std::pair<std::string, std::string>>Headers;
+		std::map<std::string, std::string>Headers;
 		std::string method;
 		std::string path;
 		std::string body;
 }HttpReq;
-//typedef struct HttpRes
-//{
-//		int status_code;
-//		std::vector<std::pair<std::string, std::string>>Headers;
-//		bool connection;
-//		int content_length;
-//		std::string content_type;
-//		std::string body;
-//}HttpRes;
-//struct Con
-//{
-//		ConnectSocket consocket;
-//		HttpReq req;
-//};
-//std::map<int, Con>connections;
 class HTTPServer
 {
 		private:
@@ -103,6 +90,27 @@ class HTTPServer
 				HTTPServer(int, struct sockaddr_in*);
 				~HTTPServer(){};
 };
+
+class HTTPRes
+{
+		private:
+				int status_code;
+				std::string phrase;
+				std::vector<std::string>headers;
+				std::string body;
+		public:
+				friend class HTTPServer;
+				HTTPRes& set_header(std::string, std::string);
+				bool do_get(const std::string);
+				bool do_post(const std::string, const std::string);
+				bool do_delete(const std::string);
+				int count_length();
+				bool path_exist(const std::string);
+				const std::string join_res();
+				HTTPRes(){};
+				~HTTPRes(){};
+};
+
 class Epoll//eventloop
 {
 		//uses-a relation
@@ -113,8 +121,8 @@ class Epoll//eventloop
 				int maxevs;
 				std::map<int, epoll_event>fd_ev;
 		public:
-				char* e_read(int, char*);
-				int e_write(int, const char*);
+				int e_read(int, char*);
+				int e_write(int, const char*, int);
 				void event_delete(int);
 				void event_modify(int, int);
 				void event_add(int, int);
