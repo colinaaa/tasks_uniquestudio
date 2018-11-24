@@ -209,7 +209,6 @@ void HTTPServer::handle_accept(Epoll& epoll)
 		connectfd=accept(listensocket.get_fd(), (struct sockaddr*)&cliaddr, &len);
 		set_non_blocking(connectfd);
 		cout<<"got connection from"<<inet_ntoa(cliaddr.sin_addr)<<":"<<ntohs(cliaddr.sin_port)<<endl;
-		addr_map[connectfd]=cliaddr;
 		epoll.event_add(connectfd, EPOLLIN);
 }
 

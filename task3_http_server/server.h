@@ -80,7 +80,6 @@ class HTTPServer
 		private:
 				ListenSocket listensocket;
 				std::map<int, HttpReq>reqs_map;
-				std::map<int, struct sockaddr_in>addr_map;
 		public:
 				void loop(Epoll&);
 				void handle_events(Epoll&, int);
@@ -110,7 +109,7 @@ class HTTPRes
 				~HTTPRes(){};
 };
 
-class Epoll//eventloop
+class Epoll
 {
 		//uses-a relation
 		friend class HTTPServer;
