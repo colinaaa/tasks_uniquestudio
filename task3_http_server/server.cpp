@@ -1,4 +1,5 @@
 #include"server.h"
+#include<fstream>
 #include<iostream>
 using namespace std;
 
@@ -246,14 +247,18 @@ int HTTPServer::parse_request(Epoll& epoll, int connectfd)
 		char read_buf[MAXBUFFER];
 		bzero(read_buf,MAXBUFFER);
 		int read_bytes=epoll.e_read(connectfd, read_buf);
+		if(read_bytes<=0)
+		{
+				return 0;
+		}
 		char method[10];
 		char path[1024];
 		char protocol[100];
 		sscanf(read_buf,"%s %s %s", method, path, protocol);
 		string raw_req=read_buf;
-		if(!raw_req.empty())
+		HttpReq req;
+		if(raw_req.length()>=5)//GET /
 		{
-				HttpReq req;
 				req.method=method;
 				req.path=path;
 				size_t body=raw_req.find("\r\n\r\n");
@@ -275,8 +280,12 @@ int HTTPServer::parse_request(Epoll& epoll, int connectfd)
 						req.Headers[headers.substr(0,i)]=headers.substr(i+2, j-i-4);
 						headers.erase(0,j);
 				}
-				reqs_map[connectfd]=req;
 		}
+		else
+		{
+				req.method="broken";
+		}
+		reqs_map[connectfd]=req;
 		epoll.event_modify(connectfd, EPOLLOUT);
 		return 0;
 }
@@ -299,19 +308,21 @@ void HTTPServer::make_response(Epoll& epoll, int connectfd)
 		{
 				succeed=res.do_delete(req.path);
 		}
+		else if(req.method=="broken")
+		{
+				res.status_code=400;
+				res.phrase="Bad Request";
+				res.body="broken\n";
+				succeed=false;
+		}
 		else
 		{
 				res.status_code=405;
 				res.phrase="Method not allowed";
+				res.body="Not allowed\n";
+				succeed=false;
 		}
-		//if(req.Headers["Connection"])
-		//{
-		//		if(req.Headers["Connection"]=="close")
-		//				res.set_header("Connection", "close");
-		//		else
-		//				res.set_header("Connection", "keep-alive");
-		//}
-		if(succeed)
+			if(succeed)
 		{
 				res.status_code=200;
 				res.phrase="OK";
@@ -325,16 +336,26 @@ void HTTPServer::make_response(Epoll& epoll, int connectfd)
 		strcpy(write_buf, Response.c_str());
 		if(TEST_OUTPUT)
 		{
-				printf("response message:%s", write_buf);
+				printf("response message:%s\n", write_buf);
 		}
 		epoll.e_write(connectfd, write_buf, res_len);
 		if(TEST_OUTPUT)
 		{
 				cout<<"made response"<<endl;
 		}
-		//keep-alive
-		epoll.event_delete(connectfd);
-		close(connectfd);
+		if(req.Headers["Connection"]=="close")
+		{
+				res.set_header("Connection", "close");
+				epoll.event_delete(connectfd);
+				close(connectfd);
+		}
+		else
+		{
+				res.set_header("Connection", "keep-alive")
+						.set_header("Keep-Alive", "timeout=5,max=1000");
+				epoll.event_modify(connectfd, EPOLLIN);
+		}
+//keep-alive
 }
 
 HTTPRes& HTTPRes::set_header(string key, string value)
@@ -352,22 +373,27 @@ HTTPRes& HTTPRes::set_header(string key, string value)
 bool HTTPRes::do_get(const string path)
 {
 		string root=ROOT;
-		if(!path_exist(path))
+		ifstream fin(root+path);
+		if(!fin.is_open())
 		{
 				status_code=404;
 				phrase="Not Found";
-				body="try again";
+				body="try again\n";
+				fin.close();
+				return false;
 		}
-		else
-		{
-				//get from root+path
-		}
+		fin>>body;
+		fin.close();
 		return true;
 }
 
 bool HTTPRes::do_post(const string data, const string path)
 {
 		string root=ROOT;
+		//设置文件模式(app为追加至文件尾)
+		ofstream fout(root+path, ios_base::out|ios_base::app);
+		fout<<data;
+		fout.close();
 		//write data to root+path
 		return true;
 }
@@ -375,19 +401,17 @@ bool HTTPRes::do_post(const string data, const string path)
 bool HTTPRes::do_delete(const string path)
 {
 		string root=ROOT;
+		ofstream fout(root+path, ios_base::out|ios_base::trunc);//截短文件
+		fout<<" ";
+		fout.close();
 		//delete data to root+path
-		body=true;
+		body="deleted\n";
 		return true;
 }
 
 int HTTPRes::count_length()
 {
 		return (int)body.length();
-}
-
-bool HTTPRes::path_exist(string path)
-{
-		return false;
 }
 
 const string HTTPRes::join_res()
@@ -403,7 +427,11 @@ const string HTTPRes::join_res()
 		}
 		return "HTTP/1.1 "+to_string(status_code)+" "+phrase+"\r\n"+Headers+"\r\n"+body;
 }
-
+void quitHandler(int sig)
+{
+		cout<<"reveive ctrl+c"<<endl;
+		exit(EXIT_SUCCESS);
+}
 int main()
 {
 		signal(SIGPIPE, SIG_IGN);
@@ -425,6 +453,7 @@ int main()
 		for(;;)
 		{
 				my_server.loop(epoll);
+				signal(SIGINT, quitHandler);
 		}
     	return 0;
 }

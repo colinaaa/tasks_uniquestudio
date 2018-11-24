@@ -2,7 +2,7 @@
 #define _SERVER_H
 #include<sys/socket.h>
 #include<sys/types.h>
-#include<stdlib.h>
+#include<cstdlib>
 #include<stdio.h>
 #include<sys/types.h>
 #include<netinet/in.h>
@@ -25,7 +25,7 @@
 #define EPOLL_SIZE 4096
 #define READ_SIZE 1024
 #define TEST_OUTPUT 1
-#define ROOT "/home/colin/Documents/"
+#define ROOT "/home/colin/Documents"
 #define EXIT_IF(r,...) if(r){\
 						printf(__VA_ARGS__);\
 						printf("%s:%d\n, errno:%d, msg:%s",__FILE__, __LINE__,errno, strerror(errno));\
@@ -105,7 +105,6 @@ class HTTPRes
 				bool do_post(const std::string, const std::string);
 				bool do_delete(const std::string);
 				int count_length();
-				bool path_exist(const std::string);
 				const std::string join_res();
 				HTTPRes(){};
 				~HTTPRes(){};
@@ -129,4 +128,6 @@ class Epoll//eventloop
 				Epoll();
 				~Epoll(){close(epollfd);};
 };
+
+void quitHandler(int sig);
 #endif
