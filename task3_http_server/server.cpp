@@ -133,7 +133,7 @@ int Epoll::e_read(int fd, char* buf)
 		int nread;
 		int n=0;
 		size_t nleft=MAXBUFFER;
-		while ((nread=read(fd, buf+n, READ_SIZE))>0)
+		while ((nread=::read(fd, buf+n, MAXBUFFER-1))>0)
 		{
 				n+=nread;
 		}
@@ -428,7 +428,7 @@ const string HTTPRes::join_res()
 }
 void quitHandler(int sig)
 {
-		cout<<"reveive ctrl+c"<<endl;
+		cout<<"receive ctrl+c"<<endl;
 		exit(EXIT_SUCCESS);
 }
 int main()

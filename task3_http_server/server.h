@@ -20,10 +20,9 @@
 
 #define BACKLOG 10
 #define PORT 9999
-#define MAXBUFFER 1024
+#define MAXBUFFER 6553568
 #define MAXEVENTS 100 //for epoll
 #define EPOLL_SIZE 4096
-#define READ_SIZE 1024
 #define TEST_OUTPUT 1
 #define ROOT "/home/colin/Documents"
 #define EXIT_IF(r,...) if(r){\
