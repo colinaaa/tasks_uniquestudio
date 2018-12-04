@@ -92,7 +92,7 @@ void Epoll::event_add(int fd, int state)
 {
 		struct epoll_event ev;
 		ev.data.fd=fd;
-		ev.events=state|EPOLLET;
+		ev.events=state;
 		fd_ev[fd]=ev;
 		int r=epoll_ctl(epollfd, EPOLL_CTL_ADD, fd, &ev);
 		EXIT_IF(r<0, "event add wrong\n");
@@ -106,7 +106,7 @@ void Epoll::event_delete(int fd)
 {
 		//struct epoll_event ev;
 		//ev.data.fd=fd;
-		//ev.events=state|EPOLLET;
+		//ev.events=state;
 		struct epoll_event ev=fd_ev[fd];
 		int r=epoll_ctl(epollfd, EPOLL_CTL_DEL, fd, &ev);
 		EXIT_IF(r<0, "event delete wrong\n");
@@ -120,7 +120,7 @@ void Epoll::event_modify(int fd, int state)
 {
 		//struct epoll_event ev;
 		struct epoll_event ev=fd_ev[fd];
-		ev.events=state|EPOLLET;
+		ev.events=state;
 		if(TEST_OUTPUT)
 		{
 				cout<<"modifing"<<endl;
@@ -132,8 +132,7 @@ int Epoll::e_read(int fd, char* buf)
 {
 		int nread;
 		int n=0;
-		size_t nleft=MAXBUFFER;
-		while ((nread=::read(fd, buf+n, MAXBUFFER-1))>0)
+		while ((nread=::read(fd, buf, MAXBUFFER))>0)
 		{
 				n+=nread;
 		}

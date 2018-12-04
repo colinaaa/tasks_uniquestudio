@@ -17,6 +17,7 @@ streamSocket::streamSocket() {
   sock_addr.sin_port = htons(PORT);
   sock_addr.sin_addr.s_addr = htonl(INADDR_ANY);
   sock_addr.sin_family = AF_INET;
+  set_non_blocking();
 }
 
 void streamSocket::set_non_blocking() {
@@ -31,7 +32,6 @@ socketAcceptor::socketAcceptor(streamSocket &listenSocket)
     : streamSocket(listenSocket) {
   Bind(get_fd(), get_addr());
   Listen(get_fd());
-  set_non_blocking();
   cout << "listening socket bind at "
        << "127.0.0.1:" << ntohs(get_addr()->sin_port) << "and keep listening!"
        << endl;
@@ -85,8 +85,7 @@ serverAcceptor::serverAcceptor(int fd, struct sockaddr_in *addr)
   initiationDispatcher::instance().registerHandler(this, ACCEPT_EVENT);
 }
 
-int serverAcceptor::handleEvent(eventType et) {
-  assert(et == ACCEPT_EVENT);
+int serverAcceptor::handleEvent() {
   streamSocket newConnection;
   _socketAcceptor.Accept(newConnection);
   readHandler *handler = new readHandler(newConnection);
@@ -96,7 +95,7 @@ int serverAcceptor::handleEvent(eventType et) {
 int initiationDispatcher::registerHandler(eventHandler_b *eh, eventType et) {
   struct epoll_event ev;
   ev.data.fd = eh->getHandle();
-  int r;
+  int r = -1;
   if ((et & READ_EVENT) || (et & ACCEPT_EVENT)) {
     ev.events = EPOLLIN;
     r = epoll_ctl(SED.getEpollFd(), EPOLL_CTL_ADD, eh->getHandle(), &ev);
@@ -131,8 +130,7 @@ int initiationDispatcher::handleEvents() {
   struct epoll_event *evs = SED.getEvents();
   for (int i = 0; i < readyEvents; i++) {
     int fd = evs[i].data.fd;
-    eventType et = (eventType)evs[i].events;
-    cbHandler[fd]->handleEvent(et);
+    cbHandler[fd]->handleEvent();
   }
   return 0;
 }
@@ -151,8 +149,7 @@ typedef struct Con {
 
 map<int, Con> connectionMap;
 
-int readHandler::handleEvent(eventType et) {
-  assert(et == READ_EVENT);
+int readHandler::handleEvent() {
   int connectfd = peerStream.get_fd();
   char buf[MAXBUFFER];
   int nread;
@@ -175,12 +172,37 @@ writeHandler::writeHandler(streamSocket &ps) : peerStream(ps) {
   initiationDispatcher::instance().registerHandler(this, WRITE_EVENT);
 }
 
-int writeHandler::handleEvent(eventType et) {
+int writeHandler::handleEvent() {
   if (connectionMap[peerStream.get_fd()].writeEnable) {
-		  string responseMessage;
-		  HTTPServer::makeResponse(peerStream.get_fd(), responseMessage);
-			int nwrite;
+    string responseMessage;
+    Con &con = connectionMap[peerStream.get_fd()];
+    HTTPServer::makeResponse(peerStream.get_fd(), responseMessage);
+    int nwrite;
+    int nleft = responseMessage.length() - con.writen;
+    while ((nwrite = ::write(peerStream.get_fd(),
+                             responseMessage.data() + con.writen, nleft) > 0)) {
+      nleft -= nwrite;
+      con.writen += nwrite;
+      if (TEST_OUTPUT) {
+        cout << "writen " << nwrite << "bytes" << endl;
+      }
+    }
+    if (nleft == 0) {
+      con.writeEnable = false;
+      initiationDispatcher::instance().removeHandler(this, WRITE_EVENT);
+      if (con.req.Headers["Connection"] == "keep-alive") {
+        readHandler *handler = new readHandler(peerStream);
+        initiationDispatcher::instance().registerHandler(handler, READ_EVENT);
+        delete this;
+      } else {
+        int fd = peerStream.get_fd();
+        close(fd);
+        connectionMap.erase(fd);
+        delete this;
+      }
+    }
   }
+  return 0;
 }
 
 int HTTPServer::parse_request(int connectfd) {
@@ -219,7 +241,7 @@ int HTTPServer::parse_request(int connectfd) {
   return 0;
 }
 
-void HTTPServer::makeResponse(int connectfd, string& responseMessage) {
+void HTTPServer::makeResponse(int connectfd, string &responseMessage) {
   HttpReq req;
   req = connectionMap[connectfd].req;
   class HTTPRes res;
@@ -255,10 +277,10 @@ void HTTPServer::makeResponse(int connectfd, string& responseMessage) {
     res.set_header("Connection", "keep-alive")
         .set_header("Keep-Alive", "timeout=5,max=1000");
   }
-  responseMessage=res.join_res();
+  responseMessage = res.join_res();
   if (TEST_OUTPUT) {
-		  cout<<"response message: "<<responseMessage;
-  }// keep-alive
+    cout << "response message: " << responseMessage;
+  } // keep-alive
 }
 
 HTTPRes &HTTPRes::set_header(string key, string value) {
@@ -319,26 +341,11 @@ const string HTTPRes::join_res() {
   return "HTTP/1.1 " + to_string(status_code) + " " + phrase + "\r\n" +
          Headers + "\r\n" + body;
 }
-void quitHandler(int sig) {
-  cout << "receive ctrl+c" << endl;
-  exit(EXIT_SUCCESS);
-}
 int main() {
-  signal(SIGPIPE, SIG_IGN);
-  int listenfd = socket(AF_INET, SOCK_STREAM, 0);
-  EXIT_IF(listenfd < 0, "socket wrong\n");
-  // create listening socket
-  class listenSocket listensocket(listenfd, &servaddr);
-  listensocket.init();
-  // create epoll
-  class Epoll epoll;
-  epoll.event_add(listenfd, EPOLLIN);
-  // create server
-  class HTTPServer my_server(listenfd, &servaddr);
-
+  streamSocket listenSocket;
+  serverAcceptor acceptor(listenSocket);
   for (;;) {
-    my_server.loop(epoll);
-    signal(SIGINT, quitHandler);
+    initiationDispatcher::instance().handleEvents();
   }
   return 0;
 }
