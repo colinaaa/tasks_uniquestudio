@@ -9,6 +9,12 @@ passwd = os.environ.get('DATABASE_PASSWD')
 
 
 def insert(columns, data, table):
+    """
+    params: 
+    columns: a list that refer to the columns are going to be inserted
+    data: a list that contains the data to be inserted and whose number equal to column
+    table: a str which refer to table you want to insert into
+    """
     db = pymysql.connect(host=host,
                          port=3306,
                          user=user,
