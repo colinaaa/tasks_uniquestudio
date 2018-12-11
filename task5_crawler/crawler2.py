@@ -11,6 +11,9 @@ def download(start):
     return response.text
 
 
+rating = 1
+
+
 def parse(raw):
     # titles and english names(with \n)
     html = etree.HTML(raw)
@@ -32,7 +35,11 @@ def parse(raw):
             data.append('无')
         else:
             data += quote
-        columns = ['title', 'foreign_name', 'info', 'evaluation', 'quote']
+        global rating
+        data.append(str(rating))
+        rating = rating+1
+        columns = ['title', 'foreign_name',
+                   'info', 'evaluation', 'quote', 'rate']
         db.insert(columns, data, 'book_douban')
         print(data)
 

@@ -51,6 +51,7 @@ def main(argv):
             res = parse(download(1))
             for i in range(2, page+1):
                 res += parse(download(i))
+                print(res, n)
             save(res, n)
 
 
