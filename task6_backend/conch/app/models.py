@@ -15,6 +15,18 @@ class User(db.Model):
     questions = db.relationship('Question', backref='author')
     answers = db.relationship('Answer', backref='author')
 
+    def to_json(self):
+        json_user = {
+            'url': url_for('api.get_user', id=self.id),
+            'username': self.username,
+            'email': self.email,
+            'school': self.school,
+            'gps': self.gps,
+            'questions': [question.to_json() for question in self.questions],
+            'answers': [answer.to_json() for answer in self.answers],
+        }
+        return json_user
+
     @property
     def password(self):
         raise AttributeError('password not readable')
@@ -28,7 +40,7 @@ class User(db.Model):
 
     def generate_auth_token(self, expiration):
         jws = Serializer(
-            current_app.config['SECRET_KEY'], expires_in=expiration)
+            current_app.config['SECRET_KEY'])  #expires_in=expiration
         return jws.dumps({'id': self.id}).decode('utf-8')
 
     @staticmethod
@@ -80,6 +92,7 @@ class Answer(db.Model):
 
     def to_json(self):
         json_answer = {
+            'url': url_for('api.get_answer', id=self.id),
             'author_url': url_for('api.get_user', id=self.author_id),
             'body': self.body,
             'question_url': url_for('api.get_question', id=self.question_id),

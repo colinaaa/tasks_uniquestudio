@@ -33,7 +33,7 @@ def before_request():
     pass
 
 
-@api.route('/tokens', methods=['POST'])
+@api.route('/tokens/', methods=['POST'])
 def get_token():
     if g.token_used:
         pass
