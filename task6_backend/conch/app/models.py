@@ -1,9 +1,11 @@
+import base64
 from . import db
 from flask import current_app, url_for
-from itsdangerous import JSONWebSignatureSerializer as Serializer
+from itsdangerous import TimedJSONWebSignatureSerializer as Serializer
 from werkzeug.security import generate_password_hash, check_password_hash
 
 
+#TESTED
 class User(db.Model):
     __tablename__ = 'users'
     id = db.Column(db.Integer, primary_key=True)
@@ -40,7 +42,9 @@ class User(db.Model):
 
     def generate_auth_token(self, expiration):
         jws = Serializer(
-            current_app.config['SECRET_KEY'])  #expires_in=expiration
+            current_app.config['SECRET_KEY'],
+            expires_in=expiration)  #expires_in=expiration
+        print(jws.dumps({'id': self.id}))
         return jws.dumps({'id': self.id}).decode('utf-8')
 
     @staticmethod

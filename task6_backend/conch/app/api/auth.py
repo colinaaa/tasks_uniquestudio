@@ -4,7 +4,7 @@ from . import api
 from flask import g, current_app, jsonify
 from itsdangerous import JSONWebSignatureSerializer as Serializer
 basic_auth = HTTPBasicAuth()
-token_auth = HTTPTokenAuth()
+token_auth = HTTPTokenAuth(scheme='Token')
 multi_auth = MultiAuth(basic_auth, token_auth)
 
 

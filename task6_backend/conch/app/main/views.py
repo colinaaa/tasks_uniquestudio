@@ -9,6 +9,8 @@ def register():
     if not request.is_json:
         raise MimetypeError('content-type not support')
     username = request.json.get('username')
+    if User.query.filter_by(username=username).first():
+        raise UserRepeatError
     email = request.json.get('email')
     school = request.json.get('school')
     gps = request.json.get('gps')

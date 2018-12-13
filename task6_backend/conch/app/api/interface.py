@@ -1,7 +1,8 @@
 from . import api
-from flask import jsonify, request
+from flask import jsonify, request, g
 from ..models import User, Answer, Question
 from .. import db
+from ..exceptions import ValidationError
 
 
 @api.route('/')
@@ -34,9 +35,12 @@ def get_answer(id):
     return jsonify(answer.to_json())
 
 
+#BUG FREE
 # POST METHODS
 @api.route('/questions/', methods=['POST'])
 def new_question():
+    if not request.is_json:
+        raise ValidationError('content-type not support')
     body = request.json.get('body')
     if body is None or body == '':
         raise ValidationError('question has no body')
@@ -46,13 +50,17 @@ def new_question():
     return jsonify(question.to_json())
 
 
+#BUG FREE
 @api.route('/answers/', methods=['POST'])
 def new_answer():
     body = request.json.get('body')
     question_id = request.json.get('question_id')
     if body is None or body == '':
         raise ValidationError('question has no body')
-    answer = Answer(body=body, question_id=int(question_id))
+    answer = Answer(
+        body=body,
+        question_id=int(question_id),
+        author_id=int(g.current_user.id))
     db.session.add(answer)
     db.session.commit()
     return jsonify(answer.to_json())
