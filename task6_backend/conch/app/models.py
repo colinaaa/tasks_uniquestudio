@@ -40,7 +40,7 @@ class User(db.Model):
     def verify_password(self, password):
         return check_password_hash(self.password_hash, password)
 
-    def generate_auth_token(self, expiration):
+    def generate_auth_token(self, expiration=3600):
         jws = Serializer(
             current_app.config['SECRET_KEY'],
             expires_in=expiration)  #expires_in=expiration
@@ -66,6 +66,12 @@ class Question(db.Model):
     body = db.Column(db.UnicodeText)
     author_id = db.Column(db.Integer, db.ForeignKey('users.id'))
     answers = db.relationship('Answer', backref='question', lazy='select')
+
+    @staticmethod
+    def get_questions():
+        questions = Question.query.all()
+        res = {"questions": [question.to_json() for question in questions]}
+        return res
 
     def to_json(self):
         answer_num = len(self.answers)

@@ -11,7 +11,7 @@ multi_auth = MultiAuth(basic_auth, token_auth)
 @basic_auth.verify_password
 def verify_password(email, password):
     if email == '':
-        return False
+        return True
     user = User.query.filter_by(email=email).first()
     if not user:
         return False
@@ -40,6 +40,4 @@ def get_token():
     return jsonify({
         'token':
         g.current_user.generate_auth_token(expiration=3600),
-        'expiration':
-        3600
     })

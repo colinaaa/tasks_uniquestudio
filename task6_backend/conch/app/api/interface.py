@@ -3,11 +3,12 @@ from flask import jsonify, request, g
 from ..models import User, Answer, Question
 from .. import db
 from ..exceptions import ValidationError
+from .auth import token_auth
 
 
 @api.route('/')
 def index():
-    return 'hello'
+    return jsonify(Question.get_questions())
 
 
 # GET METHODS
@@ -25,10 +26,6 @@ def get_question(id):
     return jsonify(question.to_json())
 
 
-# @api.route('/questions/<int:id>/answers/',methods=['POST'])
-# def get_question_answer(id):
-
-
 @api.route('/answers/<int:id>', methods=['GET'])
 def get_answer(id):
     answer = Answer.query.get_or_404(id)
@@ -37,6 +34,7 @@ def get_answer(id):
 
 #BUG FREE
 # POST METHODS
+@token_auth.login_required
 @api.route('/questions/', methods=['POST'])
 def new_question():
     if not request.is_json:
@@ -51,6 +49,7 @@ def new_question():
 
 
 #BUG FREE
+@token_auth.login_required
 @api.route('/answers/', methods=['POST'])
 def new_answer():
     body = request.json.get('body')
