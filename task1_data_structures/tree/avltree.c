@@ -41,24 +41,22 @@ AvlTree create_node(int key, AvlTree left, AvlTree right) {
 }
 
 AvlTree insert(AvlTree tree, int key) {
-  if (tree == NULL)  //空树或递归至叶子
-  {
+  //空树或递归至叶子
+  if (tree == NULL) {
     tree = create_node(key, NULL, NULL);
-  } else if (key < tree->key)  //插入左子树
-  {
+  } else if (key < tree->key) {
+    //插入左子树
     tree->left = insert(tree->left, key);
-    if (height(tree->left) - height(tree->right) == 2)
-
-    //当tree指向root时，才有可能出现不平衡，如果失去平衡
-    //此时传入旋转函数的tree是树的root指针
-    {
+    if (height(tree->left) - height(tree->right) == 2) {
+      //当tree指向root时，才有可能出现不平衡，如果失去平衡
+      //此时传入旋转函数的tree是树的root指针
       if (key > tree->left->key)
         lr_rotation(tree);
       else
         ll_rotation(tree);
     }
-  } else if (key > tree->key)  //插入右子树
-  {
+  } else if (key > tree->key) {
+    //插入右子树
     tree->right = insert(tree->right, key);
     if (height(tree->right) - height(tree->left) == 2) {
       if (key > tree->right->key) {
@@ -73,10 +71,9 @@ AvlTree insert(AvlTree tree, int key) {
   return tree;
 }
 
-AvlTree ll_rotation(AvlTree tree)  // tree是root指针
-{
+AvlTree ll_rotation(AvlTree tree) {
+  // tree是root指针
   AvlTree tem_tree;  //将需要旋转的左子树储存
-
   //旋转
   tem_tree = tree->left;
   tree->left = tem_tree->right;
