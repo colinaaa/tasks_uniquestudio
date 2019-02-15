@@ -38,6 +38,7 @@ AvlTree create_node(int key, AvlTree left, AvlTree right) {
   T->left = left;
   T->right = right;
   T->height = 0;
+  return T;
 }
 
 AvlTree insert(AvlTree tree, int key) {
